@@ -10,11 +10,9 @@ component {
     required string secretKey,
     string defaultArn = '' ) {
 
-    var awsCredentials = createObject( 'java', 'com.amazonaws.auth.BasicAWSCredentials').init( accessKey, secretKey );
-
-    variables.awsStaticCredentialsProvider = createObject( 'java','com.amazonaws.auth.AWSStaticCredentialsProvider' ).init( awsCredentials );
-
-    setDefaultArn( defaultArn );
+    variables.accessKey = accessKey;
+    variables.secretKey = secretKey;
+    variables.defaultArn = defaultArn;
 
     return this;
   }
@@ -24,10 +22,10 @@ component {
   * @payload Can be passed in as JSON, an array, or a struct. Structs and arrays will be converted to JSON, as required by Lambda
   */
   public string function invoke( any payload = {} ) {
-    if ( !isObject( variables.defaultLambda ) )
+    if ( !len( variables.defaultArn ) )
       throw( message = 'Default Lambda ARN missing', detail = 'Unable to call #GetFunctionCalledName()#() without a default Lambda ARN. You can set the default ARN on init() or manually, via setDefaultArn().' );
 
-    return invokeLambda( lambda = variables.defaultLambda, arn = variables.defaultArn, payload = payload );
+    return invokeLambda( arn = variables.defaultArn, payload = payload );
   }
 
   /**
@@ -35,13 +33,15 @@ component {
   * @payload Can be passed in as JSON, an array, or a struct. Structs and arrays will be converted to JSON, as required by Lambda
   */
   public string function invokeFunction( required string arn, any payload = {} ) {
-    return invokeLambda( lambda = buildFromArn( arn ), arn = arn, payload = payload );
+    return invokeLambda( arn = arn, payload = payload );
   }
 
   /**
   * @hint Handles the actual interaction with Lambda for the public methods.
   */
-  private string function invokeLambda( required any lambda, required string arn, required any payload ) {
+  private string function invokeLambda( required string arn, required any payload ) {
+
+    var lambda = lambdaClient( arn = arn );
 
     var invokeRequest = createObject( 'java', 'com.amazonaws.services.lambda.model.InvokeRequest').init();
     invokeRequest.setFunctionName( arn );
@@ -56,25 +56,20 @@ component {
     return decodeResponse( response );
   }
 
-  /**
-  * @hint Method for setting the default ARN and building the Lambda object off it. Called on init(), but can also be used to configure the default ARN later.
-  */
-  public void function setDefaultArn( string arn = '' ) {
-    variables.defaultLambda = arn.len()
-      ? buildFromArn( arn )
-      : '';
-
-    variables.defaultArn = arn;
+  private any function lambdaClient( required string arn ) {
+    var awsCredentials = createObject( 'java', 'com.amazonaws.auth.BasicAWSCredentials').init( variables.accessKey, variables.secretKey );
+    var awsStaticCredentialsProvider = createObject( 'java','com.amazonaws.auth.AWSStaticCredentialsProvider' ).init( awsCredentials );
+    return buildFromArn( arn, awsStaticCredentialsProvider );
   }
 
   /**
-  * @hint Takes an arn and combines it with the credentials to return the Lambda object
+  * @hint Takes an arn and combines it with the credentials to return the Lambda client
   */
-  private any function buildFromArn( required string arn ) {
+  private any function buildFromArn( arn, awsStaticCredentialsProvider ) {
     var arnComponents = parseArn( arn );
     var awsRegion = arnComponents.region;
 
-    return createObject( 'java', 'com.amazonaws.services.lambda.AWSLambdaClientBuilder').standard().withCredentials( variables.awsStaticCredentialsProvider ).withRegion( awsRegion ).build();
+    return createObject( 'java', 'com.amazonaws.services.lambda.AWSLambdaClientBuilder').standard().withCredentials( awsStaticCredentialsProvider ).withRegion( awsRegion ).build();
   }
 
   /**
