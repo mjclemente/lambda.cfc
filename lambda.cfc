@@ -3,7 +3,7 @@
 * Copyright 2018-2019 Matthew Clemente, Brian Klaas
 * Licensed under MIT
 */
-component output="false" displayname="lambda.cfc"  {
+component {
 
   public any function init(
     required string accessKey,
