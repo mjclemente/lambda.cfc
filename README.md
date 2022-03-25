@@ -39,7 +39,7 @@ result = lambda.invokeFunction( arn, payload );
 In some cases, you may be creating objects intended to invoke a single Lambda function. Rather than passing in the ARN every time, you can include it as the `defaultArn` during initialization:
 
 ```cfc
-lambda = new lambda( 
+lambda = new lambda(
 	accessKey = xxx,
 	secretKey = xxx,
 	defaultArn = 'arn:aws:lambda:us-east-1:123456789098:function:yourArn' );
@@ -59,12 +59,12 @@ result = lambda.invoke( payload );
 ### Reference Manual
 
 #### `invoke( any payload = {} )`
-Calls the Lambda function specified by the default ARN, passing in the payload. You must set the default ARN in order to use this. 
+Calls the Lambda function specified by the default ARN, passing in the payload. You must set the default ARN in order to use this.
 
 The payload can be passed in as JSON, an array, or a struct. Structs and arrays will be converted to JSON, as required by Lambda
 
 #### `invokeFunction( required string arn, any payload = {} )`
-Calls the Lambda function specified by the ARN parameter, passing in the payload. 
+Calls the Lambda function specified by the ARN parameter, passing in the payload.
 
 The payload can be passed in as JSON, an array, or a struct. Structs and arrays will be converted to JSON, as required by Lambda
 
@@ -73,11 +73,11 @@ Method for setting the default ARN manually, after `init()`.
 
 ### A Note on Permissions
 
-In order to use this component, you will need an IAM User with, at minimum, `lambda:InvokeFunction` permission (which shouldn't come as a surprise, given that its sole purpose is to invoke a Lambda function). This is easily set up by applying the `AWSLambdaRole` policy to the desired user. Other more expansive policies could also be used. 
+In order to use this component, you will need an IAM User with, at minimum, `lambda:InvokeFunction` permission (which shouldn't come as a surprise, given that its sole purpose is to invoke a Lambda function). This is easily set up by applying the `AWSLambdaRole` policy to the desired user. Other more expansive policies could also be used.
 
 ### Requirements
 
-This component depends on the .jar files contained in the `/lib` directory. All of these files can be downloaded from https://aws.amazon.com/sdk-for-java/ Files other than the actual SDK .jar itself can be found in the `/third-party` directory within the SDK download.
+This component depends on the .jar files contained in the `/lib` directory. All of these files can be downloaded from https://sdk-for-java.amazonwebservices.com/latest/aws-java-sdk.zip Files other than the actual SDK .jar itself can be found in the `/third-party` directory within the SDK download.
 
 There are two ways that you can include them in your project.
 
@@ -89,3 +89,12 @@ There are two ways that you can include them in your project.
     	loadPaths = [ '.\path\to\jars\' ]
   	};
 	```
+
+The project was most recently tested using the following jars:
+
+- aws-java-sdk-1.12.185.jar
+- jackson-dataformat-cbor-2.12.6.jar
+- jackson-databind-2.12.6.jar
+- jackson-core-2.12.6.jar
+- jackson-annotations-2.12.6.jar
+- joda-time-2.8.1.jar
