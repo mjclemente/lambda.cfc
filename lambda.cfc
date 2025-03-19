@@ -17,6 +17,9 @@ component {
     return this;
   }
 
+  // For reference - full Java API reference for AWS SDK: https://sdk.amazonaws.com/java/api/latest/index.html
+  // Lambda: https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/lambda/package-summary.html
+
   /**
   * @hint Calls the Lambda function specified by the default ARN, passing in the payload. You must set the default ARN in order to use this.
   * @payload Can be passed in as JSON, an array, or a struct. Structs and arrays will be converted to JSON, as required by Lambda
@@ -43,22 +46,27 @@ component {
 
     var lambda = lambdaClient( arn = arn );
 
-    var invokeRequest = createObject( 'java', 'com.amazonaws.services.lambda.model.InvokeRequest').init();
-    invokeRequest.setFunctionName( arn );
+    var invokeRequest = createObject( 'java', 'software.amazon.awssdk.services.lambda.model.InvokeRequest').builder();
+    invokeRequest.functionName( arn );
 
     var jsonPayload = parsePayload( payload );
 
-    if ( jsonPayload.len() )
-      invokeRequest.setPayload( jsonPayload );
-
-    var response = lambda.invoke( invokeRequest );
+    if ( jsonPayload.len() ){
+      //https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/core/SdkBytes.html
+      var SdkBytes = createObject( 'java', 'software.amazon.awssdk.core.SdkBytes' ).fromUtf8String( jsonPayload );
+      invokeRequest.payload( SdkBytes );
+    }
+    var test = lambda.build();
+    var response = test.invoke( invokeRequest.build() );
 
     return decodeResponse( response );
   }
 
   private any function lambdaClient( required string arn ) {
-    var awsCredentials = createObject( 'java', 'com.amazonaws.auth.BasicAWSCredentials').init( variables.accessKey, variables.secretKey );
-    var awsStaticCredentialsProvider = createObject( 'java','com.amazonaws.auth.AWSStaticCredentialsProvider' ).init( awsCredentials );
+    // https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/auth/credentials/AwsBasicCredentials.html
+    var awsCredentials = createObject( 'java', 'software.amazon.awssdk.auth.credentials.AwsBasicCredentials').create( variables.accessKey, variables.secretKey );
+    // https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/auth/credentials/StaticCredentialsProvider.html
+    var awsStaticCredentialsProvider = createObject( 'java','software.amazon.awssdk.auth.credentials.StaticCredentialsProvider' ).create( awsCredentials );
     return buildFromArn( arn, awsStaticCredentialsProvider );
   }
 
@@ -67,9 +75,10 @@ component {
   */
   private any function buildFromArn( arn, awsStaticCredentialsProvider ) {
     var arnComponents = parseArn( arn );
-    var awsRegion = arnComponents.region;
+    // https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/regions/Region.html
+    var awsRegion = createObject('java', 'software.amazon.awssdk.regions.Region').of(arnComponents.region);
 
-    return createObject( 'java', 'com.amazonaws.services.lambda.AWSLambdaClientBuilder').standard().withCredentials( awsStaticCredentialsProvider ).withRegion( awsRegion ).build();
+    return createObject( 'java', 'software.amazon.awssdk.services.lambda.LambdaClient').builder().credentialsProvider( awsStaticCredentialsProvider ).region( awsRegion );
   }
 
   /**
@@ -79,8 +88,8 @@ component {
   private string function decodeResponse( required any response ) {
     var charset = createObject( 'java', 'java.nio.charset.Charset' ).forName( 'UTF-8' );
     var charsetDecoder = charset.newDecoder();
-
-    return charsetDecoder.decode( response.getPayload() ).toString();
+    // https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/services/lambda/model/InvokeResponse.html
+    return response.payload().asUtf8String();
   }
 
   /**
