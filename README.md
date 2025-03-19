@@ -15,6 +15,7 @@ Call AWS Lambda functions directly from your CFML code... with a little help fro
 The core interactions with AWS used in this project are derived from projects and demos by [brianklaas](https://github.com/brianklaas), particularly [AWS Playbox](https://github.com/brianklaas/awsPlaybox).
 
 ### Getting Started
+
 *This assumes some degree of familiarity with AWS services, permissions, etc. If you're not familiar with AWS, this is going to sound like a complicated mess, but it's really pretty straightforward.*
 
 In order to be initialized, the component requires a [properly permissioned user's](#a-note-on-permissions) AccessKey and SecretKey (there's an optional third parameter for [setting a default Lambda function]((#setting-a-default-lambda-function))):
@@ -28,8 +29,8 @@ The component can then be used to invoke Lambda functions. This is done via the 
 ```cfc
 arn = 'arn:aws:lambda:us-east-1:123456789098:function:yourArn';
 payload = {
-	"variable" : value,
-	"other" : value2
+  "variable" : value,
+  "other" : value2
 };
 result = lambda.invokeFunction( arn, payload );
 ```
@@ -40,35 +41,37 @@ In some cases, you may be creating objects intended to invoke a single Lambda fu
 
 ```cfc
 lambda = new lambda(
-	accessKey = xxx,
-	secretKey = xxx,
-	defaultArn = 'arn:aws:lambda:us-east-1:123456789098:function:yourArn' );
+  accessKey = xxx,
+  secretKey = xxx,
+  defaultArn = 'arn:aws:lambda:us-east-1:123456789098:function:yourArn' );
 ```
 
 Setting a default ARN enables you to use the cleaner syntax of the `invoke()` method. You don't need to include the ARN; it will call the Lambda function specified by the default ARN, passing in the optional payload of arguments:
 
 ```cfc
 payload = {
-	"variable" : value
+  "variable" : value
 };
 //invokes the function specified by the default ARN
 result = lambda.invoke( payload );
 ```
 
-
 ### Reference Manual
 
 #### `invoke( any payload = {} )`
+
 Calls the Lambda function specified by the default ARN, passing in the payload. You must set the default ARN in order to use this.
 
 The payload can be passed in as JSON, an array, or a struct. Structs and arrays will be converted to JSON, as required by Lambda
 
 #### `invokeFunction( required string arn, any payload = {} )`
+
 Calls the Lambda function specified by the ARN parameter, passing in the payload.
 
 The payload can be passed in as JSON, an array, or a struct. Structs and arrays will be converted to JSON, as required by Lambda
 
 #### `setDefaultArn( string arn = '' )`
+
 Method for setting the default ARN manually, after `init()`.
 
 ### A Note on Permissions
@@ -77,24 +80,15 @@ In order to use this component, you will need an IAM User with, at minimum, `lam
 
 ### Requirements
 
-This component depends on the .jar files contained in the `/lib` directory. All of these files can be downloaded from https://sdk-for-java.amazonwebservices.com/latest/aws-java-sdk.zip Files other than the actual SDK .jar itself can be found in the `/third-party` directory within the SDK download.
+This component depends on the .jar files contained in the `/lib` directory. These were generated using Maven, as described [in the Github repository for AWS SDK for Java 2.0](https://github.com/aws/aws-sdk-java-v2?tab=readme-ov-file#using-the-sdk). They are for version 2.32.2 of the SDK.
 
 There are two ways that you can include them in your project.
 
 1. Include the files in your `<cf_root>/lib` directory. You will need to restart the ColdFusion server.
 2. Use `this.javaSettings` in your Application.cfc to load the .jar files. Just specify the directory that you place them in; something along the lines of
 
-	```cfc
-  	this.javaSettings = {
-    	loadPaths = [ '.\path\to\jars\' ]
-  	};
-	```
-
-The project was most recently tested using the following jars:
-
-- aws-java-sdk-1.12.185.jar
-- jackson-dataformat-cbor-2.12.6.jar
-- jackson-databind-2.12.6.jar
-- jackson-core-2.12.6.jar
-- jackson-annotations-2.12.6.jar
-- joda-time-2.8.1.jar
+  ```cfc
+    this.javaSettings = {
+      loadPaths = [ '.\path\to\jars\' ]
+    };
+  ```
