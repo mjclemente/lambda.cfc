@@ -92,3 +92,18 @@ There are two ways that you can include them in your project.
       loadPaths = [ '.\path\to\jars\' ]
     };
   ```
+
+#### Lucee CFML Specific Jar Option
+
+When using `lambda.cfc` with Lucee CFML, you have the option to provide the directory that contains the AWS Java SDK jar files when initializing the object:
+
+```cfc
+  classpath = expandPath( "/path/to/aws_java_sdk/jars" );
+
+  // will use the AWS Java SDK jars in the class path provided
+  lambda = new path.to.lambda( accessKey = xxx, secretKey = xxx, classPath = classpath );
+```
+
+This can be helpful if you want to avoid using `this.javaSettings` (for example, because of [LDEV-2516](https://luceeserver.atlassian.net/browse/LDEV-2516)).
+
+To be clear, this approach 1) is not possible with Adobe ColdFusion, 2) is not required for Lucee, and 3) when used with Lucee, means that you do *not* need to add the .jars to your `<cf_root>/lib` directory or `this.javasettings`.
