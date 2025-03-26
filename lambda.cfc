@@ -5,10 +5,25 @@
  */
 component {
 
-    public any function init(required string accessKey, required string secretKey, string defaultArn = '') {
+    /**
+     * @classPath a Lucee specific option; provide the path to a directory containing the AWS Java SDK class files for Lambda.
+     */
+    public any function init(
+        required string accessKey,
+        required string secretKey,
+        string defaultArn = '',
+        string classPath = ''
+    ) {
+        variables.serverVersion = server.keyExists('lucee') ? 'Lucee' : 'ColdFusion';
+
+        if (variables.serverVersion != 'Lucee' && len(arguments.classPath)) {
+            throw('Sorry, the option to provide a class path to the AWS SDK jars is only available with Lucee CFML.');
+        }
+
         variables.accessKey = accessKey;
         variables.secretKey = secretKey;
         variables.defaultArn = defaultArn;
+        variables.classPath = arguments.classPath;
 
         return this;
     }
@@ -44,14 +59,14 @@ component {
     private string function invokeLambda(required string arn, required any payload) {
         var lambda = lambdaClient(arn = arn);
 
-        var invokeRequest = createObject('java', 'software.amazon.awssdk.services.lambda.model.InvokeRequest').builder();
+        var invokeRequest = createObjectHelper('software.amazon.awssdk.services.lambda.model.InvokeRequest').builder();
         invokeRequest.functionName(arn);
 
         var jsonPayload = parsePayload(payload);
 
         if (jsonPayload.len()) {
             // https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/core/SdkBytes.html
-            var SdkBytes = createObject('java', 'software.amazon.awssdk.core.SdkBytes').fromUtf8String(jsonPayload);
+            var SdkBytes = createObjectHelper('software.amazon.awssdk.core.SdkBytes').fromUtf8String(jsonPayload);
             invokeRequest.payload(SdkBytes);
         }
         var test = lambda.build();
@@ -62,13 +77,12 @@ component {
 
     private any function lambdaClient(required string arn) {
         // https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/auth/credentials/AwsBasicCredentials.html
-        var awsCredentials = createObject('java', 'software.amazon.awssdk.auth.credentials.AwsBasicCredentials').create(
+        var awsCredentials = createObjectHelper('software.amazon.awssdk.auth.credentials.AwsBasicCredentials').create(
             variables.accessKey,
             variables.secretKey
         );
         // https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/auth/credentials/StaticCredentialsProvider.html
-        var awsStaticCredentialsProvider = createObject(
-            'java',
+        var awsStaticCredentialsProvider = createObjectHelper(
             'software.amazon.awssdk.auth.credentials.StaticCredentialsProvider'
         ).create(awsCredentials);
         return buildFromArn(arn, awsStaticCredentialsProvider);
@@ -80,9 +94,9 @@ component {
     private any function buildFromArn(arn, awsStaticCredentialsProvider) {
         var arnComponents = parseArn(arn);
         // https://sdk.amazonaws.com/java/api/latest/software/amazon/awssdk/regions/Region.html
-        var awsRegion = createObject('java', 'software.amazon.awssdk.regions.Region').of(arnComponents.region);
+        var awsRegion = createObjectHelper('software.amazon.awssdk.regions.Region').of(arnComponents.region);
 
-        return createObject('java', 'software.amazon.awssdk.services.lambda.LambdaClient')
+        return createObjectHelper('software.amazon.awssdk.services.lambda.LambdaClient')
             .builder()
             .credentialsProvider(awsStaticCredentialsProvider)
             .region(awsRegion);
@@ -137,6 +151,36 @@ component {
         }
 
         return result;
+    }
+
+    /**
+     * @hint Enables us to pass a specific class path when using Lucee
+     */
+    private any function createObjectHelper(required string classname) {
+        if (hasClassPath()) {
+            return createObject(
+                'java',
+                classname,
+                directoryList(
+                    expandPath(variables.classPath),
+                    true,
+                    'path',
+                    '',
+                    '',
+                    'file'
+                )
+            );
+        } else {
+            if (variables.serverVersion == 'ColdFusion') {
+                return createObject('java', classname);
+            } else {
+                return createObject('java', classname);
+            }
+        }
+    }
+
+    private boolean function hasClassPath() {
+        return len(variables.classPath);
     }
 
 }
